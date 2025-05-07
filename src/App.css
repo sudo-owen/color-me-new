@@ -1,0 +1,22 @@
+@layer components {
+  /* Ensure pixelated rendering for all browsers */
+  canvas {
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Basic styling for inputs and buttons */
+  input[type="file"], button {
+    border: 1px solid #333;
+  }
+
+  button:hover {
+    opacity: 0.9;
+  }
+
+  button:active {
+    opacity: 0.8;
+  }
+}
