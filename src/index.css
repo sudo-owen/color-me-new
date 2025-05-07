@@ -15,3 +15,9 @@ body {
   color: #E1E1E1;
   transition: colors 200ms;
 }
+
+.container {
+  width: 60rem;
+  margin: 0 auto;
+  padding: 1rem;
+}

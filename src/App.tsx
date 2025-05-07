@@ -521,6 +521,27 @@ function App() {
     }
   };
 
+  // Function to remove a specific color mapping
+  const removeColorMapping = (originalColor: string) => {
+    // Filter out the mapping with the specified original color
+    const updatedMappings = colorMappings.filter(
+      (mapping) => mapping.originalColor !== originalColor
+    );
+
+    setColorMappings(updatedMappings);
+
+    // If the selected color was the one removed, deselect it
+    if (selectedColor?.color === originalColor) {
+      setSelectedColor(null);
+    }
+
+    // Apply the updated color mappings to create remapped frames
+    if (frames.length > 0) {
+      const newRemappedFrames = remapFramesColors(frames, updatedMappings);
+      setRemappedFrames(newRemappedFrames);
+    }
+  };
+
   // Function to remap colors in frames
   const remapFramesColors = (
     originalFrames: GifFrame[],
@@ -577,85 +598,70 @@ function App() {
 
   return (
     <div
-      className="w-full px-4 py-4"
+      className="container px-4 py-4"
       style={{ color: colors.text, backgroundColor: colors.background }}
     >
-      <h1 className="text-2xl font-bold mb-6">color me new</h1>
-
-      {/* File Upload Section - Full Width */}
-      <div className="mb-6">
-        <label className="block mb-2">Upload an animated GIF:</label>
+      {/* Ultra-compact controls - true one-liner */}
+      <div className="mb-4 flex items-center gap-2 text-sm">
+        <span className="whitespace-nowrap">Upload GIF:</span>
         <input
           type="file"
           accept="image/gif"
           onChange={handleFileChange}
-          className="block mb-2 p-2"
-          style={{ backgroundColor: colors.surface }}
+          className="py-0 h-7 text-xs flex-grow-0"
+          style={{ backgroundColor: colors.surface, maxWidth: "10rem" }}
         />
-        {error && <p className="text-red-500 mt-2">{error}</p>}
-        {isLoading && <p>Loading...</p>}
+        {frames.length > 0 && (
+          <>
+            <button
+              onClick={togglePlayPause}
+              className="px-2 py-0 h-7 text-xs whitespace-nowrap"
+              style={{ backgroundColor: colors.surface, color: colors.text }}
+            >
+              {isPlaying ? "Pause" : "Play"}
+            </button>
+            <span className="whitespace-nowrap">Zoom: {zoomLevel}x</span>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={zoomLevel}
+              onChange={handleZoomChange}
+              className="w-20 h-4"
+            />
+            <button
+              onClick={toggleUnrolled}
+              className="px-2 py-0 h-7 text-xs whitespace-nowrap"
+              style={{ backgroundColor: colors.surface, color: colors.text }}
+            >
+              {showUnrolled ? "Hide" : "Show"}
+            </button>
+            <span className="text-xs whitespace-nowrap">
+              Delay: {frames[currentFrameIndex]?.delay}ms
+            </span>
+          </>
+        )}
+        {error && <span className="text-red-500 text-xs">{error}</span>}
+        {isLoading && <span className="text-xs">Loading...</span>}
       </div>
 
       {frames.length > 0 && (
         <>
-          {/* Controls Section - Full Width */}
-          <div className="mb-6">
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-              <button
-                onClick={togglePlayPause}
-                className="px-4 py-2"
-                style={{ backgroundColor: colors.surface, color: colors.text }}
-              >
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-
-              <div className="flex items-center gap-2">
-                <label>Zoom: {zoomLevel}x</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={zoomLevel}
-                  onChange={handleZoomChange}
-                  className="w-32"
-                />
-              </div>
-
-              <button
-                onClick={toggleUnrolled}
-                className="px-4 py-2"
-                style={{ backgroundColor: colors.surface, color: colors.text }}
-              >
-                {showUnrolled ? "Hide Frames" : "Show All Frames"}
-              </button>
-
-              <div className="text-sm">
-                <span>Delay: {frames[currentFrameIndex]?.delay}ms</span>
-              </div>
-            </div>
-          </div>
-
           <div className="mb-6">
             <div className="flex justify-between gap-4">
-
               <div className="">
                 <h2 className="text-lg mb-2">Original GIF</h2>
-                <div className="flex-grow">
-                  <canvas
-                    ref={regularCanvasRef}
-                    className="border"
-                    style={{
-                      maxWidth: "100%",
-                      height: "auto",
-                      borderColor: colors.border,
-                      display: "block",
-                    }}
-                  ></canvas>
-                </div>
-
                 <div className="mt-4">
-                  <h3 className="text-md mb-2">Zoomed View ({zoomLevel}x)</h3>
                   <div className="overflow-auto">
+                    <canvas
+                      ref={regularCanvasRef}
+                      className="border"
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderColor: colors.border,
+                      }}
+                    ></canvas>
                     <canvas
                       ref={zoomedCanvasRef}
                       className="border"
@@ -664,7 +670,6 @@ function App() {
                         height: "auto",
                         imageRendering: "pixelated",
                         borderColor: colors.border,
-                        display: "block",
                       }}
                     ></canvas>
                   </div>
@@ -673,22 +678,17 @@ function App() {
 
               <div className="">
                 <h2 className="text-lg mb-2">Remapped GIF</h2>
-                <div className="flex-grow">
-                  <canvas
-                    ref={remappedCanvasRef}
-                    className="border"
-                    style={{
-                      maxWidth: "100%",
-                      height: "auto",
-                      borderColor: colors.border,
-                      display: "block",
-                    }}
-                  ></canvas>
-                </div>
-
                 <div className="mt-4">
-                  <h3 className="text-md mb-2">Zoomed View ({zoomLevel}x)</h3>
                   <div className="overflow-auto">
+                    <canvas
+                      ref={remappedCanvasRef}
+                      className="border"
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderColor: colors.border,
+                      }}
+                    ></canvas>
                     <canvas
                       ref={remappedZoomedCanvasRef}
                       className="border"
@@ -697,7 +697,6 @@ function App() {
                         height: "auto",
                         imageRendering: "pixelated",
                         borderColor: colors.border,
-                        display: "block",
                       }}
                     ></canvas>
                   </div>
@@ -707,284 +706,265 @@ function App() {
 
             {/* Color Remapping Controls */}
             <div className="flex flex-col h-full">
-              <h2 className="text-lg mb-2">Color Remapping</h2>
-              <div
-                className="border p-3 mb-4"
-                style={{ borderColor: colors.border }}
-              >
-                <h3 className="text-md mb-2">Instructions</h3>
-                <p className="text-sm mb-2">
-                  Click on a color from the palette below to select it for
-                  remapping. Then use the color picker or enter a hex value to
-                  change it.
-                </p>
-              </div>
-
-              {/* Selected Color Section */}
-              <div
-                className="border p-3 mb-4"
-                style={{ borderColor: colors.border }}
-              >
-                <h3 className="text-md mb-2">Selected Color</h3>
-                {selectedColor ? (
-                  <div className="flex flex-col">
-                    <div className="flex items-center mb-2">
-                      <div
-                        className="mr-2 border"
-                        style={{
-                          backgroundColor: selectedColor.color,
-                          borderColor: colors.border,
-                          width: "32px",
-                          height: "32px",
-                          minWidth: "32px",
-                          minHeight: "32px",
-                          flexShrink: 0,
-                        }}
-                      ></div>
-                      <div className="text-xs">
-                        <div>RGB: {selectedColor.rgb.join(", ")}</div>
-                        <div>
-                          HSL: {rgbToHsl(...selectedColor.rgb).join(", ")}
-                        </div>
-                      </div>
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Left column - Color palette */}
+                <div className="md:w-3/5">
+                  {/* Color Palette */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-md font-medium">
+                        Color Palette ({colorPalette.length} colors)
+                      </h3>
                     </div>
 
-                    {/* Color Picker */}
-                    <div className="mb-2">
-                      <label className="block text-xs mb-1">New Color:</label>
-                      <div className="flex items-center">
-                        <input
-                          type="color"
-                          className="mr-2"
-                          value={
-                            colorMappings.find(
-                              (m) => m.originalColor === selectedColor.color
-                            )?.newColor || selectedColor.color
-                          }
-                          onChange={(e) => updateColorMapping(e.target.value)}
-                        />
-                        <input
-                          type="text"
-                          className="px-2 py-1 text-xs"
+                    <div className="flex flex-wrap gap-2 overflow-y-auto">
+                      {colorPalette.map((colorInfo, index) => {
+                        const isRemapped = colorMappings.some(
+                          (mapping) =>
+                            mapping.originalColor === colorInfo.color &&
+                            mapping.newColor !== colorInfo.color
+                        );
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex flex-col items-center p-2 rounded cursor-pointer transition-all"
+                            style={{
+                              position: "relative",
+                            }}
+                            onClick={() => handleColorSelect(colorInfo)}
+                          >
+                            {isRemapped && (
+                              <div
+                                className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500"
+                                title="This color has been remapped"
+                              ></div>
+                            )}
+                            <div
+                              className=""
+                              style={{
+                                backgroundColor: colorInfo.color,
+                                borderColor: colors.border,
+                                width: "36px",
+                                height: "36px",
+                                margin: "2px",
+                                borderRadius: "4px",
+                              }}
+                            ></div>
+                            <div className="text-xs text-center"></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right column - Selected color + active mappings */}
+                <div className="md:w-2/5">
+                  {/* Selected Color Section */}
+                  <div
+                    className="border p-3 mb-4 rounded"
+                    style={{ borderColor: colors.border }}
+                  >
+                    {selectedColor ? (
+                      <div className="flex flex-col">
+                        {/* Color Picker - Improved layout */}
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              className="w-12 h-8"
+                              value={
+                                colorMappings.find(
+                                  (m) => m.originalColor === selectedColor.color
+                                )?.newColor || selectedColor.color
+                              }
+                              onChange={(e) =>
+                                updateColorMapping(e.target.value)
+                              }
+                            />
+                            <input
+                              type="text"
+                              className="flex-1 px-2 py-1 text-sm font-mono rounded"
+                              style={{
+                                backgroundColor: colors.surface,
+                                color: colors.text,
+                              }}
+                              value={
+                                colorMappings.find(
+                                  (m) => m.originalColor === selectedColor.color
+                                )?.newColor || selectedColor.color
+                              }
+                              onChange={(e) =>
+                                updateColorMapping(e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        {/* Preview - Enhanced with background */}
+                        <div
+                          className="flex items-center mb-3 p-2 rounded"
+                          style={{ backgroundColor: colors.surface }}
+                        >
+                          <div className="flex-1 text-center">
+                            <div className="text-xs mb-1">Original</div>
+                            <div
+                              className="mx-auto border rounded"
+                              style={{
+                                backgroundColor: selectedColor.color,
+                                borderColor: colors.border,
+                                width: "32px",
+                                height: "32px",
+                              }}
+                            ></div>
+                          </div>
+                          <div className="text-xl mx-2">→</div>
+                          <div className="flex-1 text-center">
+                            <div className="text-xs mb-1">New</div>
+                            <div
+                              className="mx-auto border rounded"
+                              style={{
+                                backgroundColor:
+                                  colorMappings.find(
+                                    (m) =>
+                                      m.originalColor === selectedColor.color
+                                  )?.newColor || selectedColor.color,
+                                borderColor: colors.border,
+                                width: "32px",
+                                height: "32px",
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Reset button */}
+                        {colorMappings.some(
+                          (m) =>
+                            m.originalColor === selectedColor.color &&
+                            m.newColor !== selectedColor.color
+                        ) && (
+                          <button
+                            className="text-xs px-2 py-1 mt-1 w-full rounded"
+                            style={{
+                              backgroundColor: colors.surface,
+                              color: colors.text,
+                            }}
+                            onClick={() => {
+                              // Reset this color mapping to the original color
+                              updateColorMapping(selectedColor.color);
+                            }}
+                          >
+                            Reset to Original Color
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm p-4 flex items-center justify-center h-24 text-center opacity-70">
+                        Select a color from the palette to edit it
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Color Mappings List */}
+                  <div
+                    className="border p-3 mb-4 rounded"
+                    style={{ borderColor: colors.border }}
+                  >
+                    <div className="flex justify-between items-center mb-3">
+                      {colorMappings.length > 0 && (
+                        <button
+                          className="text-xs px-2 py-1 rounded"
                           style={{
                             backgroundColor: colors.surface,
                             color: colors.text,
                           }}
-                          placeholder="#RRGGBB"
-                          value={
-                            colorMappings.find(
-                              (m) => m.originalColor === selectedColor.color
-                            )?.newColor || selectedColor.color
-                          }
-                          onChange={(e) => updateColorMapping(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Preview */}
-                    <div className="flex items-center mb-2">
-                      <div className="flex-1 text-center">
-                        <div className="text-xs mb-1">Original</div>
-                        <div
-                          className="mx-auto border"
-                          style={{
-                            backgroundColor: selectedColor.color,
-                            borderColor: colors.border,
-                            width: "32px",
-                            height: "32px",
+                          onClick={() => {
+                            // Reset all color mappings
+                            setColorMappings([]);
+                            // Reset remapped frames to original frames
+                            const initialRemappedFrames = frames.map(
+                              (frame) => ({
+                                ...frame,
+                                colorTable: [...frame.colorTable],
+                                patch: new Uint8ClampedArray(frame.patch),
+                              })
+                            );
+                            setRemappedFrames(initialRemappedFrames);
                           }}
-                        ></div>
-                      </div>
-                      <div className="text-xl">→</div>
-                      <div className="flex-1 text-center">
-                        <div className="text-xs mb-1">New</div>
-                        <div
-                          className="mx-auto border"
-                          style={{
-                            backgroundColor:
-                              colorMappings.find(
-                                (m) => m.originalColor === selectedColor.color
-                              )?.newColor || selectedColor.color,
-                            borderColor: colors.border,
-                            width: "32px",
-                            height: "32px",
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Reset button */}
-                    {colorMappings.some(
-                      (m) =>
-                        m.originalColor === selectedColor.color &&
-                        m.newColor !== selectedColor.color
-                    ) && (
-                      <button
-                        className="text-xs px-2 py-1 mt-1 w-full"
-                        style={{
-                          backgroundColor: colors.surface,
-                          color: colors.text,
-                        }}
-                        onClick={() => {
-                          // Reset this color mapping to the original color
-                          updateColorMapping(selectedColor.color);
-                        }}
-                      >
-                        Reset to Original Color
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm">
-                    No color selected. Click on a color below.
-                  </p>
-                )}
-              </div>
-
-              {/* Color Mappings List */}
-              <div
-                className="border p-3 mb-4"
-                style={{ borderColor: colors.border }}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-md">Active Mappings</h3>
-                  {colorMappings.length > 0 && (
-                    <button
-                      className="text-xs px-2 py-1"
-                      style={{
-                        backgroundColor: colors.surface,
-                        color: colors.text,
-                      }}
-                      onClick={() => {
-                        // Reset all color mappings
-                        setColorMappings([]);
-                        // Reset remapped frames to original frames
-                        const initialRemappedFrames = frames.map((frame) => ({
-                          ...frame,
-                          colorTable: [...frame.colorTable],
-                          patch: new Uint8ClampedArray(frame.patch),
-                        }));
-                        setRemappedFrames(initialRemappedFrames);
-                      }}
-                    >
-                      Reset All
-                    </button>
-                  )}
-                </div>
-                {colorMappings.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2">
-                    {colorMappings.map((mapping, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center p-1 border cursor-pointer"
-                        style={{ borderColor: colors.border }}
-                        onClick={() => {
-                          // Find the color in the palette that matches this mapping
-                          const colorInfo = colorPalette.find(
-                            (color) => color.color === mapping.originalColor
-                          );
-                          if (colorInfo) {
-                            handleColorSelect(colorInfo);
-                          }
-                        }}
-                      >
-                        <div
-                          className="mr-1 border"
-                          style={{
-                            backgroundColor: mapping.originalColor,
-                            borderColor: colors.border,
-                            width: "24px",
-                            height: "24px",
-                            minWidth: "24px",
-                            minHeight: "24px",
-                          }}
-                        ></div>
-                        <div className="text-xl mx-1">→</div>
-                        <div
-                          className="mr-1 border"
-                          style={{
-                            backgroundColor: mapping.newColor,
-                            borderColor: colors.border,
-                            width: "24px",
-                            height: "24px",
-                            minWidth: "24px",
-                            minHeight: "24px",
-                          }}
-                        ></div>
-                        <div className="text-xs ml-1">
-                          {mapping.originalRgb.join(",")} →{" "}
-                          {mapping.newRgb.join(",")}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm">No color mappings yet.</p>
-                )}
-              </div>
-
-              {/* Color Palette */}
-              <h3 className="text-md mb-2">
-                Color Palette ({colorPalette.length} colors)
-              </h3>
-              <div
-                className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4 overflow-y-auto"
-                style={{ maxHeight: "300px" }}
-              >
-                {colorPalette.map((colorInfo, index) => {
-                  // Convert RGB to HSL
-                  const [h, s, l] = rgbToHsl(...colorInfo.rgb);
-                  const isSelected = selectedColor?.color === colorInfo.color;
-                  const isRemapped = colorMappings.some(
-                    (mapping) =>
-                      mapping.originalColor === colorInfo.color &&
-                      mapping.newColor !== colorInfo.color
-                  );
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center p-1 border cursor-pointer"
-                      style={{
-                        borderColor: isSelected
-                          ? colors.primary
-                          : colors.border,
-                        outline: isSelected
-                          ? `2px solid ${colors.primary}`
-                          : "none",
-                        outlineOffset: "2px",
-                        position: "relative",
-                      }}
-                      onClick={() => handleColorSelect(colorInfo)}
-                    >
-                      {isRemapped && (
-                        <div
-                          className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500"
-                          title="This color has been remapped"
-                        ></div>
+                        >
+                          Reset All
+                        </button>
                       )}
-                      <div
-                        className="mr-2 border"
-                        style={{
-                          backgroundColor: colorInfo.color,
-                          borderColor: colors.border,
-                          width: "24px",
-                          height: "24px",
-                          minWidth: "24px",
-                          minHeight: "24px",
-                          flexShrink: 0,
-                        }}
-                      ></div>
-                      <div className="text-xs">
-                        <div>RGB: {colorInfo.rgb.join(", ")}</div>
-                        <div>
-                          HSL: {h}, {s}%, {l}%
-                        </div>
-                        <div>Count: {colorInfo.count}</div>
-                      </div>
                     </div>
-                  );
-                })}
+                      <div className="flex flex-wrap gap-4 min-h-48">
+                        {colorMappings.map((mapping, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center rounded relative"
+                            style={{
+                              backgroundColor: colors.surface,
+                              padding: "1rem",
+                            }}
+                          >
+                            <div
+                              className="flex items-center cursor-pointer"
+                              onClick={() => {
+                                // Find the color in the palette that matches this mapping
+                                const colorInfo = colorPalette.find(
+                                  (color) =>
+                                    color.color === mapping.originalColor
+                                );
+                                if (colorInfo) {
+                                  handleColorSelect(colorInfo);
+                                }
+                              }}
+                            >
+                              <div
+                                className="mr-1 border rounded"
+                                style={{
+                                  backgroundColor: mapping.originalColor,
+                                  borderColor: colors.border,
+                                  width: "20px",
+                                  height: "20px",
+                                  minWidth: "20px",
+                                  minHeight: "20px",
+                                }}
+                              ></div>
+                              <div className="text-lg mx-1">→</div>
+                              <div
+                                className="mr-2 border rounded"
+                                style={{
+                                  backgroundColor: mapping.newColor,
+                                  borderColor: colors.border,
+                                  width: "20px",
+                                  height: "20px",
+                                  minWidth: "20px",
+                                  minHeight: "20px",
+                                }}
+                              ></div>
+                            </div>
+
+                            {/* X button to remove this color mapping */}
+                            <button
+                              className="w-5 h-5 justify-center rounded-full text-xs opacity-70 hover:opacity-100 cursor-pointer ml-4"
+                              style={{
+                                backgroundColor: colors.accent,
+                                color: colors.text,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent triggering the parent onClick
+                                removeColorMapping(mapping.originalColor);
+                              }}
+                              title="Remove this color mapping"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
