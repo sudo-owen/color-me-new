@@ -376,42 +376,14 @@ function App() {
     setShowUnrolled((prev) => !prev);
   };
 
-  // Function to convert RGB to HSL
-  const rgbToHsl = (
-    r: number,
-    g: number,
-    b: number
-  ): [number, number, number] => {
-    r /= 255;
-    g /= 255;
-    b /= 255;
 
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0,
-      s = 0;
-    const l = (max + min) / 2;
-
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-      switch (max) {
-        case r:
-          h = (g - b) / d + (g < b ? 6 : 0);
-          break;
-        case g:
-          h = (b - r) / d + 2;
-          break;
-        case b:
-          h = (r - g) / d + 4;
-          break;
-      }
-
-      h /= 6;
-    }
-
-    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  // Function to determine if a color is light or dark
+  const isLightColor = (rgb: [number, number, number]): boolean => {
+    // Calculate relative luminance using the formula
+    // L = 0.299*R + 0.587*G + 0.114*B
+    const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+    // Return true if the color is light (luminance > 0.5)
+    return luminance > 0.5;
   };
 
   // Function to convert HEX to RGB
@@ -442,6 +414,17 @@ function App() {
           ]
         : [0, 0, 0];
     }
+  };
+
+  // Function to convert RGB to HEX
+  const rgbToHex = (rgb: [number, number, number]): string => {
+    // Convert each RGB component to a 2-digit hex value
+    const r = rgb[0].toString(16).padStart(2, '0');
+    const g = rgb[1].toString(16).padStart(2, '0');
+    const b = rgb[2].toString(16).padStart(2, '0');
+
+    // Return the hex color with # prefix
+    return `#${r}${g}${b}`;
   };
 
   // Function to handle color selection for remapping
@@ -719,27 +702,19 @@ function App() {
 
                     <div className="flex flex-wrap gap-2 overflow-y-auto">
                       {colorPalette.map((colorInfo, index) => {
-                        const isRemapped = colorMappings.some(
+                        const isInRemapping = colorMappings.some(
                           (mapping) =>
-                            mapping.originalColor === colorInfo.color &&
-                            mapping.newColor !== colorInfo.color
+                            mapping.originalColor === colorInfo.color
                         );
-
                         return (
                           <div
                             key={index}
-                            className="flex flex-col items-center p-2 rounded cursor-pointer transition-all"
+                            className="flex flex-col items-center p-2 rounded cursor-pointer"
                             style={{
                               position: "relative",
                             }}
                             onClick={() => handleColorSelect(colorInfo)}
                           >
-                            {isRemapped && (
-                              <div
-                                className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500"
-                                title="This color has been remapped"
-                              ></div>
-                            )}
                             <div
                               className=""
                               style={{
@@ -749,8 +724,25 @@ function App() {
                                 height: "36px",
                                 margin: "2px",
                                 borderRadius: "4px",
+                                border: "1px solid " + colors.border,
+                                position: "relative",
                               }}
-                            ></div>
+                            >
+                              {isInRemapping && (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    top: "-3px",
+                                    right: "-3px",
+                                    width: "8px",
+                                    height: "8px",
+                                    borderRadius: "50%",
+                                    backgroundColor: "#333",
+                                    border: "1px solid white",
+                                  }}
+                                />
+                              )}
+                            </div>
                             <div className="text-xs text-center"></div>
                           </div>
                         );
@@ -759,7 +751,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* Right column - Selected color + active mappings */}
+                {/* Selected color + active mappings */}
                 <div className="md:w-2/5">
                   {/* Selected Color Section */}
                   <div
@@ -773,11 +765,8 @@ function App() {
                           <div className="flex items-center gap-2">
                             <input
                               type="color"
-                              className="w-12 h-8"
-                              value={
-                                colorMappings.find(
-                                  (m) => m.originalColor === selectedColor.color
-                                )?.newColor || selectedColor.color
+                              className="w-12 h-8 border"
+                              value={rgbToHex(selectedColor.rgb)
                               }
                               onChange={(e) =>
                                 updateColorMapping(e.target.value)
@@ -793,7 +782,7 @@ function App() {
                               value={
                                 colorMappings.find(
                                   (m) => m.originalColor === selectedColor.color
-                                )?.newColor || selectedColor.color
+                                )?.newColor || rgbToHex(selectedColor.rgb)
                               }
                               onChange={(e) =>
                                 updateColorMapping(e.target.value)
@@ -829,7 +818,7 @@ function App() {
                                   colorMappings.find(
                                     (m) =>
                                       m.originalColor === selectedColor.color
-                                  )?.newColor || selectedColor.color,
+                                  )?.newColor || rgbToHex(selectedColor.rgb),
                                 borderColor: colors.border,
                                 width: "32px",
                                 height: "32px",
@@ -837,27 +826,6 @@ function App() {
                             ></div>
                           </div>
                         </div>
-
-                        {/* Reset button */}
-                        {colorMappings.some(
-                          (m) =>
-                            m.originalColor === selectedColor.color &&
-                            m.newColor !== selectedColor.color
-                        ) && (
-                          <button
-                            className="text-xs px-2 py-1 mt-1 w-full rounded"
-                            style={{
-                              backgroundColor: colors.surface,
-                              color: colors.text,
-                            }}
-                            onClick={() => {
-                              // Reset this color mapping to the original color
-                              updateColorMapping(selectedColor.color);
-                            }}
-                          >
-                            Reset to Original Color
-                          </button>
-                        )}
                       </div>
                     ) : (
                       <div className="text-sm p-4 flex items-center justify-center h-24 text-center opacity-70">
